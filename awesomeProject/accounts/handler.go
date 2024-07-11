@@ -20,8 +20,9 @@ type Handler struct {
 	guard    *sync.RWMutex
 }
 
+// CreateAccount Создаёт аккаунт с балансом
 func (h *Handler) CreateAccount(c echo.Context) error {
-	var request dto.ChangeAccountRequest // {"name": "alice", "amount": 50}
+	var request dto.CreateAccountRequest // {"name": "alice", "amount": 50}
 	if err := c.Bind(&request); err != nil {
 		c.Logger().Error(err)
 
@@ -47,15 +48,25 @@ func (h *Handler) CreateAccount(c echo.Context) error {
 
 	h.guard.Unlock()
 
-	return c.NoContent(http.StatusCreated)
+	return c.NoContent(http.StatusOK)
 }
 
+// GetAccount Получает баланс аккаунта
 func (h *Handler) GetAccount(c echo.Context) error {
-	name := c.QueryParams().Get("name")
+	var request dto.GetAccountRequest
+	if err := c.Bind(&request); err != nil {
+		c.Logger().Error(err)
+
+		return c.String(http.StatusBadRequest, "invalid request")
+	}
+
+	if len(request.Name) == 0 {
+		return c.String(http.StatusBadRequest, "empty name")
+	}
 
 	h.guard.RLock()
 
-	account, ok := h.accounts[name]
+	account, ok := h.accounts[request.Name]
 
 	h.guard.RUnlock()
 
@@ -71,19 +82,100 @@ func (h *Handler) GetAccount(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-// Удаляет аккаунт
+// DeleteAccount Удаляет аккаунт
 func (h *Handler) DeleteAccount(c echo.Context) error {
-	panic("implement me")
+
+	var request dto.DeleteAccountRequest
+	if err := c.Bind(&request); err != nil {
+		c.Logger().Error(err)
+
+		return c.String(http.StatusBadRequest, "invalid request")
+	}
+
+	if len(request.Name) == 0 {
+		return c.String(http.StatusBadRequest, "empty name")
+	}
+
+	h.guard.Lock()
+
+	if _, ok := h.accounts[request.Name]; !ok {
+		h.guard.Unlock()
+
+		return c.String(http.StatusForbidden, "account does not exist")
+	}
+
+	delete(h.accounts, request.Name)
+
+	h.guard.Unlock()
+
+	return c.NoContent(http.StatusOK)
 }
 
-// Меняет баланс
-func (h *Handler) PathAccount(c echo.Context) error {
-	panic("implement me")
+// PatchAccount Меняет баланс
+func (h *Handler) PatchAccount(c echo.Context) error {
+
+	var request dto.PatchAccountRequest
+
+	if err := c.Bind(&request); err != nil {
+		c.Logger().Error(err)
+
+		return c.String(http.StatusBadRequest, "invalid request")
+	}
+
+	if len(request.Name) == 0 {
+		return c.String(http.StatusBadRequest, "empty name")
+	}
+
+	h.guard.Lock()
+
+	if _, ok := h.accounts[request.Name]; !ok {
+		h.guard.Unlock()
+
+		return c.String(http.StatusForbidden, "account does not exist")
+	}
+
+	h.accounts[request.Name].Amount = request.Amount
+
+	h.guard.Unlock()
+
+	return c.NoContent(http.StatusOK)
 }
 
-// Меняет имя
+// ChangeAccount Меняет имя
 func (h *Handler) ChangeAccount(c echo.Context) error {
-	panic("implement me")
-}
+	var request dto.ChangeAccountRequest
 
-// Написать клиент консольный, который делает запросы
+	if err := c.Bind(&request); err != nil {
+		c.Logger().Error(err)
+
+		return c.String(http.StatusBadRequest, "invalid request")
+	}
+
+	if len(request.Name) == 0 {
+		return c.String(http.StatusBadRequest, "empty name")
+	}
+	if len(request.NameNew) == 0 {
+		return c.String(http.StatusBadRequest, "empty new name")
+	}
+
+	h.guard.Lock()
+
+	if _, ok := h.accounts[request.Name]; !ok {
+		h.guard.Unlock()
+
+		return c.String(http.StatusForbidden, "account does not exist")
+	}
+
+	if _, ok := h.accounts[request.NameNew]; ok {
+		h.guard.Unlock()
+
+		return c.String(http.StatusForbidden, "account with new name already exists")
+	}
+
+	h.accounts[request.NameNew] = h.accounts[request.Name]
+	delete(h.accounts, request.Name)
+
+	h.guard.Unlock()
+
+	return c.NoContent(http.StatusOK)
+}

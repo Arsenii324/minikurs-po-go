@@ -5,13 +5,18 @@ type CreateAccountRequest struct {
 	Amount int    `json:"amount"`
 }
 
+type GetAccountRequest struct {
+	Name string `query:"name"`
+}
+
 type PatchAccountRequest struct {
-	Name string `json:"name"`
+	Name   string `json:"name"`
+	Amount int    `json:"amount"`
 }
 
 type ChangeAccountRequest struct {
-	Name   string `json:"name"`
-	Amount int    `json:"amount"`
+	Name    string `json:"name"`
+	NameNew string `json:"name_new"`
 }
 
 type DeleteAccountRequest struct {
