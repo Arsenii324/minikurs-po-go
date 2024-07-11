@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+option go_package = "gRPCProject/proto";
+
+package proto;
+
+service Greeter {
+  rpc CreateAccount (CreateAccountRequest) returns (BaseReply) {}
+  rpc DeleteAccount (DeleteAccountRequest) returns (BaseReply) {}
+  rpc PatchAccount (PatchAccountRequest) returns (BaseReply) {}
+  rpc ChangeAccount (ChangeAccountRequest) returns (BaseReply) {}
+  rpc GetAccount (GetAccountRequest) returns (GetAccountResponse) {}
+}
+
+message BaseReply {
+  string state = 1;
+}
+
+message CreateAccountRequest  {
+  string name = 1;
+  int32 amount = 2;
+}
+
+message GetAccountRequest  {
+  string name = 1;
+}
+
+message PatchAccountRequest  {
+  string name = 1;
+  int32 amount = 2;
+}
+
+message ChangeAccountRequest  {
+  string name = 1;
+  string name_new = 2;
+}
+
+message DeleteAccountRequest  {
+  string name = 1;
+}
+
+message GetAccountResponse  {
+  string name = 1;
+  int32 amount = 2;
+}
